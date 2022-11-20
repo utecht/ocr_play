@@ -134,7 +134,7 @@ constructor(
         private const val TEXT_WITH_LANGUAGE_TAG_FORMAT = "%s:%s"
         private const val TEXT_COLOR = Color.BLACK
         private const val MARKER_COLOR = Color.WHITE
-        private const val TEXT_SIZE = 54.0f
-        private const val STROKE_WIDTH = 4.0f
+        private const val TEXT_SIZE = 24.0f
+        private const val STROKE_WIDTH = 2.0f
     }
 }
