@@ -16,13 +16,12 @@
 
 package com.example.ocr_play.util
 
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.RectF
+import android.graphics.*
 import android.util.Log
 import com.example.ocr_play.util.GraphicOverlay.Graphic
 import com.google.mlkit.vision.text.Text
+import com.google.mlkit.vision.text.Text.Line
+import com.google.mlkit.vision.text.Text.TextBlock
 import java.util.Arrays
 import kotlin.math.max
 import kotlin.math.min
@@ -61,55 +60,124 @@ constructor(
     /** Draws the text block annotations for position, size, and raw value on the supplied canvas. */
     override fun draw(canvas: Canvas?) {
         if(canvas == null) return
-        Log.d(TAG, "Text is: " + text.text)
-        for (textBlock in text.textBlocks) { // Renders the text at the bottom of the box.
-            Log.d(TAG, "TextBlock text is: " + textBlock.text)
-            Log.d(TAG, "TextBlock boundingbox is: " + textBlock.boundingBox)
-            Log.d(TAG, "TextBlock cornerpoint is: " + Arrays.toString(textBlock.cornerPoints))
-            if (shouldGroupTextInBlocks) {
-                drawText(
-                    getFormattedText(textBlock.text, textBlock.recognizedLanguage, confidence = null),
-                    RectF(textBlock.boundingBox),
-                    TEXT_SIZE * textBlock.lines.size + 2 * STROKE_WIDTH,
-                    canvas
-                )
-            } else {
-                for (line in textBlock.lines) {
-                    Log.d(TAG, "Line text is: " + line.text)
-                    Log.d(TAG, "Line boundingbox is: " + line.boundingBox)
-                    Log.d(TAG, "Line cornerpoint is: " + Arrays.toString(line.cornerPoints))
-                    Log.d(TAG, "Line confidence is: " + line.confidence)
-                    Log.d(TAG, "Line angle is: " + line.angle)
-                    // Draws the bounding box around the TextBlock.
-                    val rect = RectF(line.boundingBox)
-                    drawText(
-                        getFormattedText(line.text, line.recognizedLanguage, line.confidence),
-                        rect,
-                        TEXT_SIZE + 2 * STROKE_WIDTH,
-                        canvas
-                    )
-                    for (element in line.elements) {
-                        Log.d(TAG, "Element text is: " + element.text)
-                        Log.d(TAG, "Element boundingbox is: " + element.boundingBox)
-                        Log.d(TAG, "Element cornerpoint is: " + Arrays.toString(element.cornerPoints))
-                        Log.d(TAG, "Element language is: " + element.recognizedLanguage)
-                        Log.d(TAG, "Element confidence is: " + element.confidence)
-                        Log.d(TAG, "Element angle is: " + element.angle)
+        var line: Line?
+        var color: Int = TEXT_COLOR
+        line = findValue("Volume", text)
+        if(line != null){
+            drawLine("Volume", line, Color.GREEN, canvas)
+        }
+        line = findValue("Compliance", text)
+        if(line != null){
+            drawLine("Compliance", line, Color.RED, canvas)
+        }
+        line = findValue("Pressure", text)
+        if(line != null){
+            drawLine("Pressure", line, Color.YELLOW, canvas)
+        }
+        line = findValue("Gradient", text)
+        if(line != null){
+            drawLine("Gradient", line, Color.MAGENTA, canvas)
+        }
+//        Log.d(TAG, "Text is: " + text.text)
+//        for (textBlock in text.textBlocks) { // Renders the text at the bottom of the box.
+//            for (line in textBlock.lines) {
+//                Log.d(TAG, "Line text is: " + line.text)
+//                Log.d(TAG, "Line boundingbox is: " + line.boundingBox)
+//                Log.d(TAG, "Line cornerpoint is: " + Arrays.toString(line.cornerPoints))
+//                Log.d(TAG, "Line confidence is: " + line.confidence)
+//                Log.d(TAG, "Line angle is: " + line.angle)
+//                // Draws the bounding box around the TextBlock.
+//                var color: Int = TEXT_COLOR
+//                if(line.text == "Volume") color = Color.GREEN
+//                if(line.text == "Compliance") color = Color.YELLOW
+//                if(line.text == "Pressure") color = Color.MAGENTA
+//                if(line.text == "Gradient") color = Color.RED
+//                val rect = RectF(line.boundingBox)
+//                drawText(
+//                    getFormattedText(line.text, line.recognizedLanguage, line.confidence),
+//                    rect,
+//                    TEXT_SIZE + 2 * STROKE_WIDTH,
+//                    canvas,
+//                    color
+//                )
+//            }
+//        }
+    }
+
+    private fun drawLine(label: String, line: Line, color: Int, canvas: Canvas){
+        val rect = RectF(line.boundingBox)
+        drawText(
+            getFormattedText(line.text, label),
+            rect,
+            TEXT_SIZE + 2 * STROKE_WIDTH,
+            canvas,
+            color
+        )
+    }
+
+    private fun findValue(target: String, text: Text): Line? {
+        for(textBlock in text.textBlocks){
+            for(line in textBlock.lines){
+                if(line.text == target){
+                    var minY: Int = getMinY(line.cornerPoints!!)
+                    var maxY: Int = getMaxY(line.cornerPoints!!)
+                    return findValueInYRange(text, line, minY, maxY)
+                }
+            }
+        }
+        return null
+    }
+
+    private fun getMinY(points: Array<Point>): Int {
+        var minY = Int.MAX_VALUE
+        for(point in points){
+            if(point.y < minY){
+                minY = point.y
+            }
+        }
+        return minY
+    }
+
+    private fun getMaxY(points: Array<Point>): Int {
+        var maxY = Int.MIN_VALUE
+        for(point in points){
+            if(point.y > maxY){
+                maxY = point.y
+            }
+        }
+        return maxY
+    }
+
+    private fun findValueInYRange(text: Text, ignore: Line, minY: Int, maxY: Int): Line? {
+        for(textBlock in text.textBlocks){
+            for(line in textBlock.lines){
+                if(line.text != ignore.text){
+                    var midY: Float = getMidY(line.cornerPoints!!)
+                    if(midY > minY && midY < maxY){
+                        return line
                     }
                 }
             }
         }
+        return null
     }
 
-    private fun getFormattedText(text: String, languageTag: String, confidence: Float?): String {
-        val res =
-            if (showLanguageTag) String.format(TEXT_WITH_LANGUAGE_TAG_FORMAT, languageTag, text) else text
-        return if (showConfidence && confidence != null) String.format("%s (%.2f)", res, confidence)
-        else res
+    private fun getMidY(points: Array<Point>): Float {
+        var total: Int = 0
+        for(point in points){
+            total += point.y
+        }
+        return total / 4.0f
     }
 
-    private fun drawText(text: String, rect: RectF, textHeight: Float, canvas: Canvas) {
+    private fun getFormattedText(text: String, label: String): String {
+        return String.format("%s\n%s", label, text)
+    }
+
+    private fun drawText(text: String, rect: RectF, textHeight: Float, canvas: Canvas, color: Int) {
         // If the image is flipped, the left will be translated to right, and the right to left.
+        textPaint.color = color;
+        rectPaint.color = color;
         val x0 = translateX(rect.left)
         val x1 = translateX(rect.right)
         rect.left = min(x0, x1)
@@ -119,11 +187,11 @@ constructor(
         canvas.drawRect(rect, rectPaint)
         val textWidth = textPaint.measureText(text)
         canvas.drawRect(
-            rect.left - STROKE_WIDTH,
-            rect.top - textHeight,
-            rect.left + textWidth + 2 * STROKE_WIDTH,
-            rect.top,
-            labelPaint
+            /* left = */ rect.left - STROKE_WIDTH,
+            /* top = */ rect.top - textHeight,
+            /* right = */ rect.left + textWidth + 2 * STROKE_WIDTH,
+            /* bottom = */ rect.top,
+            /* paint = */ labelPaint
         )
         // Renders the text at the bottom of the box.
         canvas.drawText(text, rect.left, rect.top - STROKE_WIDTH, textPaint)
