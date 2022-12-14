@@ -21,8 +21,6 @@ import android.util.Log
 import com.example.ocr_play.util.GraphicOverlay.Graphic
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.Text.Line
-import com.google.mlkit.vision.text.Text.TextBlock
-import java.util.Arrays
 import kotlin.math.max
 import kotlin.math.min
 
@@ -61,47 +59,35 @@ constructor(
     override fun draw(canvas: Canvas?) {
         if(canvas == null) return
         var line: Line?
+        var foundAll: Boolean = true
         var color: Int = TEXT_COLOR
         line = findValue("Volume", text)
         if(line != null){
             drawLine("Volume", line, Color.GREEN, canvas)
+        } else {
+            foundAll = false
         }
         line = findValue("Compliance", text)
         if(line != null){
             drawLine("Compliance", line, Color.RED, canvas)
+        } else {
+            foundAll = false
         }
         line = findValue("Pressure", text)
         if(line != null){
             drawLine("Pressure", line, Color.YELLOW, canvas)
+        } else {
+            foundAll = false
         }
         line = findValue("Gradient", text)
         if(line != null){
             drawLine("Gradient", line, Color.MAGENTA, canvas)
+        } else {
+            foundAll = false
         }
-//        Log.d(TAG, "Text is: " + text.text)
-//        for (textBlock in text.textBlocks) { // Renders the text at the bottom of the box.
-//            for (line in textBlock.lines) {
-//                Log.d(TAG, "Line text is: " + line.text)
-//                Log.d(TAG, "Line boundingbox is: " + line.boundingBox)
-//                Log.d(TAG, "Line cornerpoint is: " + Arrays.toString(line.cornerPoints))
-//                Log.d(TAG, "Line confidence is: " + line.confidence)
-//                Log.d(TAG, "Line angle is: " + line.angle)
-//                // Draws the bounding box around the TextBlock.
-//                var color: Int = TEXT_COLOR
-//                if(line.text == "Volume") color = Color.GREEN
-//                if(line.text == "Compliance") color = Color.YELLOW
-//                if(line.text == "Pressure") color = Color.MAGENTA
-//                if(line.text == "Gradient") color = Color.RED
-//                val rect = RectF(line.boundingBox)
-//                drawText(
-//                    getFormattedText(line.text, line.recognizedLanguage, line.confidence),
-//                    rect,
-//                    TEXT_SIZE + 2 * STROKE_WIDTH,
-//                    canvas,
-//                    color
-//                )
-//            }
-//        }
+        if(foundAll){
+            Log.d(TAG, "All blocks found")
+        }
     }
 
     private fun drawLine(label: String, line: Line, color: Int, canvas: Canvas){
